@@ -11,3 +11,6 @@ build/
 .DS_Store
 .idea/
 .vscode/
+
+# Ignore Uploads folder for generated PDFs and uploaded documents
+backend/OsnRegistration.API/Uploads/

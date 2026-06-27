@@ -17,4 +17,11 @@
     <ProjectReference Include="..\OsnRegistration.Infrastructure\OsnRegistration.Infrastructure.csproj" />
   </ItemGroup>
 
+  <!-- Copy Assets folder (logo, etc.) to build output so PdfService can find them at runtime -->
+  <ItemGroup>
+    <None Update="Assets\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

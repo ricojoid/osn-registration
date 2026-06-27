@@ -14,6 +14,72 @@ public class PdfService : IPdfService
         _uploadPath = uploadPath;
     }
 
+    /// <summary>
+    /// Returns the absolute path to Letterhead.png bundled with the API.
+    /// </summary>
+    private static string LogoPath =>
+        Path.Combine(AppContext.BaseDirectory, "Assets", "Letterhead.png");
+
+    /// <summary>
+    /// Signature block — landscape rectangle stamp:
+    ///   LEFT: logo | RIGHT: digital text + name + NIP
+    ///   "Ketua Pelaksana" outside/below the box
+    /// </summary>
+    private static void RenderDigitalStamp(ColumnDescriptor col, string signerName)
+    {
+        col.Item().AlignRight().Width(210).Column(sig =>
+        {
+            sig.Item().Text("Hormat kami,").FontSize(11);
+            sig.Item().Text("Ketua Panitia Pelaksana,").FontSize(11);
+
+            sig.Item().Height(8);
+
+            // Landscape rectangle stamp box — thicker border
+            sig.Item().Border(2f).BorderColor(Colors.Grey.Darken2)
+                .Padding(10).Row(row =>
+                {
+                    // LEFT: logo (slightly smaller)
+                    row.ConstantItem(48).Column(logoCol =>
+                    {
+                        var logoPath = LogoPath;
+                        if (File.Exists(logoPath))
+                        {
+                            logoCol.Item().AlignCenter().AlignMiddle()
+                                .Width(42).Image(logoPath).FitWidth();
+                        }
+                    });
+
+                    // Vertical divider
+                    row.ConstantItem(1).Background(Colors.Grey.Darken2);
+
+                    // Spacer
+                    row.ConstantItem(8);
+
+                    // RIGHT: digital signature text
+                    row.RelativeItem().Column(textCol =>
+                    {
+                        textCol.Item()
+                            .Text("Ditandatangani secara digital oleh:")
+                            .FontSize(8f).Italic().FontColor(Colors.Grey.Darken2);
+
+                        // Push name+NIP further down
+                        textCol.Item().Height(10);
+
+                        textCol.Item()
+                            .Text(signerName)
+                            .Bold().FontSize(10);
+
+                        textCol.Item().Height(3);
+
+                        textCol.Item()
+                            .Text("NIP. 19850312 201012 1 002")
+                            .FontSize(8f).FontColor(Colors.Grey.Darken2);
+                    });
+                });
+
+        });
+    }
+
     public Task<string> GenerateVerificationLetterAsync(
         string participantName,
         string verifierName,
@@ -122,17 +188,10 @@ public class PdfService : IPdfService
                     col.Item().Text("Demikian surat keterangan ini diterbitkan untuk dapat dipergunakan sebagaimana mestinya. Atas perhatian, kerja sama, dan semangat juang yang ditunjukkan, kami ucapkan terima kasih.")
                         .LineHeight(1.5f);
 
-                    col.Item().Height(36);
+                    col.Item().Height(24);
 
                     // === SIGNATURE ===
-                    col.Item().AlignRight().Column(sigCol =>
-                    {
-                        sigCol.Item().Text("Hormat kami,");
-                        sigCol.Item().Text("Ketua Panitia Pelaksana,");
-                        sigCol.Item().Height(60);
-                        sigCol.Item().Text(verifierName).Bold().Underline();
-                        sigCol.Item().Text("NIP. 19850312 201012 1 002").FontSize(10);
-                    });
+                    RenderDigitalStamp(col, verifierName);
                 });
             });
         }).GeneratePdf(fullPath);
@@ -164,7 +223,6 @@ public class PdfService : IPdfService
             new System.Globalization.CultureInfo("id-ID"));
 
         var typeLabel = cancellationType == "Cancelled" ? "Pembatalan" : "Penundaan";
-        var typeVerb = cancellationType == "Cancelled" ? "dibatalkan" : "ditunda pelaksanaannya";
 
         Document.Create(container =>
         {
@@ -273,17 +331,10 @@ public class PdfService : IPdfService
                     col.Item().Text("Demikian surat pernyataan ini kami sampaikan dengan penuh rasa hormat. Atas pengertian, kesabaran, dan kerja sama yang diberikan, kami mengucapkan terima kasih yang sebesar-besarnya.")
                         .LineHeight(1.5f);
 
-                    col.Item().Height(36);
+                    col.Item().Height(24);
 
                     // === SIGNATURE ===
-                    col.Item().AlignRight().Column(sigCol =>
-                    {
-                        sigCol.Item().Text("Hormat kami,");
-                        sigCol.Item().Text("Ketua Panitia Pelaksana,");
-                        sigCol.Item().Height(60);
-                        sigCol.Item().Text(adminName).Bold().Underline();
-                        sigCol.Item().Text("NIP. 19850312 201012 1 002").FontSize(10);
-                    });
+                    RenderDigitalStamp(col, adminName);
                 });
             });
         }).GeneratePdf(fullPath);
@@ -407,17 +458,10 @@ public class PdfService : IPdfService
                     col.Item().Text("Demikian pemberitahuan ini kami sampaikan. Kami mengucapkan terima kasih atas perhatian dan kerja samanya. Selamat mempersiapkan diri dan semoga sukses.")
                         .LineHeight(1.5f);
 
-                    col.Item().Height(36);
+                    col.Item().Height(24);
 
                     // === SIGNATURE ===
-                    col.Item().AlignRight().Column(sigCol =>
-                    {
-                        sigCol.Item().Text("Hormat kami,");
-                        sigCol.Item().Text("Ketua Panitia Pelaksana,");
-                        sigCol.Item().Height(60);
-                        sigCol.Item().Text(adminName).Bold().Underline();
-                        sigCol.Item().Text("NIP. 19850312 201012 1 002").FontSize(10);
-                    });
+                    RenderDigitalStamp(col, adminName);
                 });
             });
         }).GeneratePdf(fullPath);
