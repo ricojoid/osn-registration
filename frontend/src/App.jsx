@@ -3,15 +3,22 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './components/shared/Toast';
 import ProtectedRoute from './components/Layout/ProtectedRoute';
 import DashboardLayout from './components/Layout/DashboardLayout';
+import NasionalDashboardLayout from './components/Layout/NasionalDashboardLayout';
 
 // Auth pages
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 
 // Admin pages
+import AdminModeSelection from './pages/admin/AdminModeSelection';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import EventManagement from './pages/admin/EventManagement';
 import VerificationPage from './pages/admin/VerificationPage';
+
+// Admin Nasional pages
+import NasionalDashboard from './pages/admin/nasional/NasionalDashboard';
+import RegionList from './pages/admin/nasional/RegionList';
+import RegionEventManagement from './pages/admin/nasional/RegionEventManagement';
 
 // Pendaftar pages
 import PendaftarDashboard from './pages/pendaftar/PendaftarDashboard';
@@ -57,10 +64,22 @@ function AppRoutes() {
 
       {/* Admin routes */}
       <Route element={<ProtectedRoute allowedRoles={['Admin']} />}>
+        {/* Mode Selection */}
+        <Route path="/admin" element={<AdminModeSelection />} />
+
+        {/* Nasional Mode */}
+        <Route element={<NasionalDashboardLayout />}>
+          <Route path="/admin/nasional" element={<NasionalDashboard />} />
+          <Route path="/admin/nasional/events" element={<RegionList />} />
+          <Route path="/admin/nasional/events/:regionId" element={<RegionEventManagement />} />
+          <Route path="/admin/nasional/verify" element={<VerificationPage />} />
+        </Route>
+
+        {/* Daerah Mode */}
         <Route element={<DashboardLayout />}>
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/admin/events" element={<EventManagement />} />
-          <Route path="/admin/verify" element={<VerificationPage />} />
+          <Route path="/admin/daerah" element={<AdminDashboard />} />
+          <Route path="/admin/daerah/events" element={<EventManagement />} />
+          <Route path="/admin/daerah/verify" element={<VerificationPage />} />
         </Route>
       </Route>
 

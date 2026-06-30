@@ -3,17 +3,29 @@ import { useNavigate } from 'react-router-dom';
 import { eventsApi } from '../../api/axios';
 import { useToast } from '../../components/shared/Toast';
 import { formatDate, getDaysRemaining, isRegistrationOpen, getErrorMessage } from '../../utils/helpers';
-import { Trophy, Calendar, MapPin, Clock, Users, FileText, Download, Edit, AlertCircle } from 'lucide-react';
+import { registrationsApi } from '../../api/axios';
+import { Trophy, Calendar, MapPin, Clock, Users, FileText, Download, Edit, AlertCircle, CheckCircle } from 'lucide-react';
 
 export default function EventList() {
   const [events, setEvents] = useState([]);
+  const [myRegistrations, setMyRegistrations] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const toast = useToast();
 
   useEffect(() => {
     loadEvents();
+    loadMyRegistrations();
   }, []);
+
+  const loadMyRegistrations = async () => {
+    try {
+      const { data } = await registrationsApi.getMy();
+      setMyRegistrations(data);
+    } catch (err) {
+      console.error('Failed to load registrations:', err);
+    }
+  };
 
   const loadEvents = async () => {
     try {
@@ -98,7 +110,8 @@ export default function EventList() {
           }}
         >
           {events.map((event, idx) => {
-            const canRegister = isRegistrationOpen(event.eventStartDate) && event.status === 'Open';
+            const isRegistered = myRegistrations.some(r => r.eventId === event.id);
+            const canRegister = isRegistrationOpen(event.eventStartDate) && event.status === 'Open' && !isRegistered;
             const daysLeft = getDaysRemaining(event.registrationDeadline);
 
             return (
@@ -237,10 +250,16 @@ export default function EventList() {
                     </div>
                   ) : (
                     <span
-                      className="badge badge-closed"
+                      className={`badge ${isRegistered ? 'badge-verified' : 'badge-closed'}`}
                       style={{ fontSize: '12px' }}
                     >
-                      Pendaftaran Ditutup
+                      {isRegistered ? (
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <CheckCircle size={14} /> Sudah Terdaftar
+                        </span>
+                      ) : (
+                        'Pendaftaran Ditutup'
+                      )}
                     </span>
                   )}
                 </div>

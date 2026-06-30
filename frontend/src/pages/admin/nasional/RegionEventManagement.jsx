@@ -1,15 +1,28 @@
 import { useState, useEffect } from 'react';
-import { eventsApi } from '../../api/axios';
-import { useToast } from '../../components/shared/Toast';
-import { formatDate, getErrorMessage } from '../../utils/helpers';
+import { useParams, Link } from 'react-router-dom';
+import { eventsApi } from '../../../api/axios';
+import { useToast } from '../../../components/shared/Toast';
+import { formatDate, getErrorMessage } from '../../../utils/helpers';
 import { 
   Trophy, CheckCircle2, XCircle, PauseCircle, Plus, Edit, 
-  Ban, RefreshCw, FileText, Download, Save, Info, AlertCircle, Calendar as CalendarIcon 
+  Ban, RefreshCw, FileText, Download, Save, Info, AlertCircle,
+  MapPin, ChevronRight, Calendar as CalendarIcon
 } from 'lucide-react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 
-export default function EventManagement() {
+const REGION_MAP = {
+  'jawa-barat': 'Jawa Barat',
+  'jawa-tengah': 'Jawa Tengah',
+  'jawa-timur': 'Jawa Timur',
+  'banten': 'Banten',
+  'jakarta': 'Jakarta',
+};
+
+export default function RegionEventManagement() {
+  const { regionId } = useParams();
+  const regionName = REGION_MAP[regionId] || regionId;
+
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -39,12 +52,17 @@ export default function EventManagement() {
 
   useEffect(() => {
     loadEvents();
-  }, []);
+  }, [regionId]);
 
   const loadEvents = async () => {
+    setLoading(true);
     try {
       const { data } = await eventsApi.getAll();
-      setEvents(data);
+      // Filter events by region/location
+      const filtered = data.filter(
+        (e) => e.location && e.location.toLowerCase().includes(regionName.toLowerCase())
+      );
+      setEvents(filtered);
     } catch (err) {
       toast.error(getErrorMessage(err));
     } finally {
@@ -59,6 +77,8 @@ export default function EventManagement() {
 
   const openCreateModal = () => {
     resetForm();
+    // Pre-fill the location with region name
+    setForm((prev) => ({ ...prev, location: regionName }));
     setShowModal(true);
   };
 
@@ -155,7 +175,11 @@ export default function EventManagement() {
 
     setRescheduleLoading(true);
     try {
-      await eventsApi.reschedule(rescheduleTarget.id, rescheduleForm);
+      const payload = {
+        eventStartDate: rescheduleForm.eventStartDate.toISOString(),
+        eventEndDate: rescheduleForm.eventEndDate.toISOString()
+      };
+      await eventsApi.reschedule(rescheduleTarget.id, payload);
       toast.success(`Lomba "${rescheduleTarget.name}" berhasil dijadwalkan ulang.`);
       setShowRescheduleModal(false);
       setRescheduleTarget(null);
@@ -178,7 +202,6 @@ export default function EventManagement() {
       link.setAttribute('download', fileName);
       document.body.appendChild(link);
       link.click();
-      link.remove();
       link.remove();
       window.URL.revokeObjectURL(url);
     } catch (err) {
@@ -231,12 +254,19 @@ export default function EventManagement() {
 
   return (
     <div className="page-content">
+      {/* Breadcrumb */}
+      <div className="breadcrumb animate-fade-in">
+        <Link to="/admin/nasional/events">Kelola Lomba</Link>
+        <span className="breadcrumb-sep"><ChevronRight size={14} /></span>
+        <span>{regionName}</span>
+      </div>
+
       <div className="page-header animate-fade-in">
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <Trophy size={32} className="text-primary" />
+          <MapPin size={32} className="text-primary" />
           <div>
-            <h1 className="page-title" style={{ margin: 0 }}>Kelola Lomba</h1>
-            <p className="page-subtitle" style={{ margin: 0 }}>CRUD perlombaan Olimpiade Sains Nasional</p>
+            <h1 className="page-title" style={{ margin: 0 }}>Lomba — {regionName}</h1>
+            <p className="page-subtitle" style={{ margin: 0 }}>Kelola perlombaan di daerah {regionName}</p>
           </div>
         </div>
         <button className="btn btn-primary" onClick={openCreateModal} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -247,8 +277,8 @@ export default function EventManagement() {
       {events.length === 0 ? (
         <div className="glass-card empty-state animate-fade-in-up">
           <div className="empty-state-icon"><Trophy size={48} className="text-muted" /></div>
-          <div className="empty-state-title">Belum ada lomba</div>
-          <div className="empty-state-text">Klik tombol "Tambah Lomba" untuk membuat perlombaan baru.</div>
+          <div className="empty-state-title">Belum ada lomba di {regionName}</div>
+          <div className="empty-state-text">Klik tombol "Tambah Lomba" untuk membuat perlombaan baru di daerah ini.</div>
         </div>
       ) : (
         <div className="glass-card table-container animate-fade-in-up">
@@ -345,7 +375,7 @@ export default function EventManagement() {
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2 className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                {editingEvent ? <><Edit size={24} /> Edit Lomba</> : <><Plus size={24} /> Tambah Lomba</>}
+                {editingEvent ? <><Edit size={24} /> Edit Lomba</> : <><Plus size={24} /> Tambah Lomba — {regionName}</>}
               </h2>
               <button className="modal-close" onClick={() => setShowModal(false)}>
                 ✕
@@ -354,9 +384,9 @@ export default function EventManagement() {
 
             <form onSubmit={handleSubmit}>
               <div className="form-group">
-                <label className="form-label" htmlFor="event-name">Nama Lomba *</label>
+                <label className="form-label" htmlFor="region-event-name">Nama Lomba *</label>
                 <input
-                  id="event-name"
+                  id="region-event-name"
                   className="form-input"
                   type="text"
                   name="name"
@@ -367,9 +397,9 @@ export default function EventManagement() {
               </div>
 
               <div className="form-group">
-                <label className="form-label" htmlFor="event-desc">Deskripsi</label>
+                <label className="form-label" htmlFor="region-event-desc">Deskripsi</label>
                 <textarea
-                  id="event-desc"
+                  id="region-event-desc"
                   className="form-input"
                   name="description"
                   placeholder="Deskripsi lomba..."
@@ -382,10 +412,10 @@ export default function EventManagement() {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div className="form-group">
-                  <label className="form-label" htmlFor="event-start">Tanggal Mulai *</label>
+                  <label className="form-label" htmlFor="region-event-start">Tanggal Mulai *</label>
                   <div className="date-picker-wrapper">
                     <DatePicker
-                      id="event-start"
+                      id="region-event-start"
                       selected={form.eventStartDate}
                       onChange={(date) => setForm({ ...form, eventStartDate: date })}
                       showTimeSelect
@@ -399,10 +429,10 @@ export default function EventManagement() {
                   </div>
                 </div>
                 <div className="form-group">
-                  <label className="form-label" htmlFor="event-end">Tanggal Selesai *</label>
+                  <label className="form-label" htmlFor="region-event-end">Tanggal Selesai *</label>
                   <div className="date-picker-wrapper">
                     <DatePicker
-                      id="event-end"
+                      id="region-event-end"
                       selected={form.eventEndDate}
                       onChange={(date) => setForm({ ...form, eventEndDate: date })}
                       showTimeSelect
@@ -418,13 +448,13 @@ export default function EventManagement() {
               </div>
 
               <div className="form-group">
-                <label className="form-label" htmlFor="event-location">Lokasi</label>
+                <label className="form-label" htmlFor="region-event-location">Lokasi</label>
                 <input
-                  id="event-location"
+                  id="region-event-location"
                   className="form-input"
                   type="text"
                   name="location"
-                  placeholder="Contoh: Jakarta Convention Center"
+                  placeholder={`Lokasi di ${regionName}`}
                   value={form.location}
                   onChange={handleChange}
                 />
@@ -530,11 +560,11 @@ export default function EventManagement() {
 
             {/* Reason */}
             <div className="form-group">
-              <label className="form-label" htmlFor="cancel-reason">
+              <label className="form-label" htmlFor="region-cancel-reason">
                 Alasan {cancelForm.type === 'Cancelled' ? 'Pembatalan' : 'Penundaan'} *
               </label>
               <textarea
-                id="cancel-reason"
+                id="region-cancel-reason"
                 className="form-input"
                 placeholder={`Jelaskan alasan ${cancelForm.type === 'Cancelled' ? 'pembatalan' : 'penundaan'} lomba ini...`}
                 rows={4}
@@ -605,39 +635,39 @@ export default function EventManagement() {
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '16px' }}>
-              <div className="form-group">
-                <label className="form-label">Jadwal Mulai Baru *</label>
-                <div className="date-picker-wrapper">
-                  <DatePicker
-                    selected={rescheduleForm.eventStartDate}
-                    onChange={(date) => setRescheduleForm({ ...rescheduleForm, eventStartDate: date })}
-                    showTimeSelect
-                    timeFormat="HH:mm"
-                    timeIntervals={15}
-                    dateFormat="dd/MM/yyyy HH:mm"
-                    placeholderText="Pilih Tanggal & Waktu"
-                    className="form-input"
-                    wrapperClassName="w-100"
-                  />
+                <div className="form-group">
+                  <label className="form-label">Jadwal Mulai Baru *</label>
+                  <div className="date-picker-wrapper">
+                    <DatePicker
+                      selected={rescheduleForm.eventStartDate}
+                      onChange={(date) => setRescheduleForm({ ...rescheduleForm, eventStartDate: date })}
+                      showTimeSelect
+                      timeFormat="HH:mm"
+                      timeIntervals={15}
+                      dateFormat="dd/MM/yyyy HH:mm"
+                      placeholderText="Pilih Tanggal & Waktu"
+                      className="form-input"
+                      wrapperClassName="w-100"
+                    />
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Jadwal Selesai Baru *</label>
+                  <div className="date-picker-wrapper">
+                    <DatePicker
+                      selected={rescheduleForm.eventEndDate}
+                      onChange={(date) => setRescheduleForm({ ...rescheduleForm, eventEndDate: date })}
+                      showTimeSelect
+                      timeFormat="HH:mm"
+                      timeIntervals={15}
+                      dateFormat="dd/MM/yyyy HH:mm"
+                      placeholderText="Pilih Tanggal & Waktu"
+                      className="form-input"
+                      wrapperClassName="w-100"
+                    />
+                  </div>
                 </div>
               </div>
-              <div className="form-group">
-                <label className="form-label">Jadwal Selesai Baru *</label>
-                <div className="date-picker-wrapper">
-                  <DatePicker
-                    selected={rescheduleForm.eventEndDate}
-                    onChange={(date) => setRescheduleForm({ ...rescheduleForm, eventEndDate: date })}
-                    showTimeSelect
-                    timeFormat="HH:mm"
-                    timeIntervals={15}
-                    dateFormat="dd/MM/yyyy HH:mm"
-                    placeholderText="Pilih Tanggal & Waktu"
-                    className="form-input"
-                    wrapperClassName="w-100"
-                  />
-                </div>
-              </div>
-            </div>
 
               <div style={{
                 padding: '10px 14px',

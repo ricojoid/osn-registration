@@ -2,10 +2,10 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { getInitials } from '../../utils/helpers';
 import NotificationsDropdown from '../shared/NotificationsDropdown';
-import { BarChart, Trophy, ClipboardCheck, Home, FileText, LogOut, ArrowLeft } from 'lucide-react';
+import { BarChart, Trophy, ClipboardCheck, LogOut, ArrowLeft } from 'lucide-react';
 
-export default function DashboardLayout() {
-  const { user, logout, isAdmin } = useAuth();
+export default function NasionalDashboardLayout() {
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -13,19 +13,11 @@ export default function DashboardLayout() {
     navigate('/login');
   };
 
-  const adminLinks = [
-    { to: '/admin/daerah', label: 'Dashboard', icon: <BarChart size={20} />, end: true },
-    { to: '/admin/daerah/events', label: 'Kelola Lomba', icon: <Trophy size={20} /> },
-    { to: '/admin/daerah/verify', label: 'Verifikasi Berkas', icon: <ClipboardCheck size={20} /> },
+  const nasionalLinks = [
+    { to: '/admin/nasional', label: 'Dashboard', icon: <BarChart size={20} />, end: true },
+    { to: '/admin/nasional/events', label: 'Kelola Lomba', icon: <Trophy size={20} /> },
+    { to: '/admin/nasional/verify', label: 'Verifikasi Berkas', icon: <ClipboardCheck size={20} /> },
   ];
-
-  const pendaftarLinks = [
-    { to: '/pendaftar', label: 'Dashboard', icon: <Home size={20} />, end: true },
-    { to: '/pendaftar/events', label: 'Daftar Lomba', icon: <Trophy size={20} /> },
-    { to: '/pendaftar/my-registrations', label: 'Pendaftaran Saya', icon: <FileText size={20} /> },
-  ];
-
-  const links = isAdmin ? adminLinks : pendaftarLinks;
 
   return (
     <div className="app-layout">
@@ -33,13 +25,13 @@ export default function DashboardLayout() {
       <aside className="sidebar">
         <div className="sidebar-header">
           <div className="sidebar-brand">
-            {isAdmin ? 'OSN Daerah' : 'OSN Portal'}
-            <span>{isAdmin ? 'Dashboard Tingkat Daerah' : 'Olimpiade Sains Nasional'}</span>
+            OSN Nasional
+            <span>Dashboard Tingkat Nasional</span>
           </div>
         </div>
 
         <nav className="sidebar-nav">
-          {links.map((link) => (
+          {nasionalLinks.map((link) => (
             <NavLink
               key={link.to}
               to={link.to}
@@ -55,22 +47,20 @@ export default function DashboardLayout() {
         </nav>
 
         <div className="sidebar-footer">
-          {isAdmin && (
-            <button
-              className="back-to-mode"
-              onClick={() => navigate('/admin')}
-              style={{ width: '100%', marginBottom: '12px' }}
-            >
-              <ArrowLeft size={16} /> Kembali ke Pilihan Mode
-            </button>
-          )}
+          <button
+            className="back-to-mode"
+            onClick={() => navigate('/admin')}
+            style={{ width: '100%', marginBottom: '12px' }}
+          >
+            <ArrowLeft size={16} /> Kembali ke Pilihan Mode
+          </button>
           <div className="sidebar-user">
             <div className="sidebar-avatar">
               {getInitials(user?.fullName)}
             </div>
             <div className="sidebar-user-info">
               <div className="sidebar-user-name">{user?.fullName}</div>
-              <div className="sidebar-user-role">{isAdmin ? 'Admin Daerah' : user?.role}</div>
+              <div className="sidebar-user-role">Admin Nasional</div>
             </div>
           </div>
           <button
