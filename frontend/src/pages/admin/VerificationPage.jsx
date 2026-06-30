@@ -10,7 +10,7 @@ import {
 
 export default function VerificationPage() {
   const [events, setEvents] = useState([]);
-  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [selectedEvent, setSelectedEvent] = useState('all');
   const [registrations, setRegistrations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [regsLoading, setRegsLoading] = useState(false);
@@ -25,10 +25,7 @@ export default function VerificationPage() {
     try {
       const { data } = await eventsApi.getAll();
       setEvents(data);
-      if (data.length > 0) {
-        setSelectedEvent(data[0].id);
-        loadRegistrations(data[0].id);
-      }
+      loadRegistrations('all');
     } catch (err) {
       toast.error(getErrorMessage(err));
     } finally {
@@ -39,7 +36,9 @@ export default function VerificationPage() {
   const loadRegistrations = async (eventId) => {
     setRegsLoading(true);
     try {
-      const { data } = await registrationsApi.getByEvent(eventId);
+      const { data } = eventId === 'all' 
+        ? await registrationsApi.getAll() 
+        : await registrationsApi.getByEvent(eventId);
       setRegistrations(data);
     } catch (err) {
       toast.error(getErrorMessage(err));
@@ -49,7 +48,8 @@ export default function VerificationPage() {
   };
 
   const handleEventChange = (e) => {
-    const eventId = parseInt(e.target.value);
+    const val = e.target.value;
+    const eventId = val === 'all' ? 'all' : parseInt(val);
     setSelectedEvent(eventId);
     setExpandedReg(null);
     loadRegistrations(eventId);
@@ -110,9 +110,10 @@ export default function VerificationPage() {
         <select
           id="verify-event-select"
           className="form-select"
-          value={selectedEvent || ''}
+          value={selectedEvent || 'all'}
           onChange={handleEventChange}
         >
+          <option value="all">Semua Lomba</option>
           {events.map((event) => (
             <option key={event.id} value={event.id}>
               {event.name} — {formatDate(event.eventStartDate)}
@@ -141,6 +142,7 @@ export default function VerificationPage() {
                 <tr>
                   <th>#</th>
                   <th>Nama Pendaftar</th>
+                  <th>Lomba</th>
                   <th>Email</th>
                   <th>Tanggal Daftar</th>
                   <th>Status</th>
@@ -155,6 +157,7 @@ export default function VerificationPage() {
                     <td style={{ color: 'var(--text-primary)', fontWeight: 600 }}>
                       {reg.userFullName}
                     </td>
+                    <td><span className="badge badge-info">{reg.eventName}</span></td>
                     <td>{reg.userEmail}</td>
                     <td>{formatDateTime(reg.registeredAt)}</td>
                     <td>
